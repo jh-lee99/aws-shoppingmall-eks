@@ -42,8 +42,12 @@ sed -i "s|defaultInstanceProfile: .*|defaultInstanceProfile: $EKS_INSTANCE_PROFI
 sed -i "s|interruptionQueueName: .*|interruptionQueueName: $EKS_KARPENTER_QUEUE_NAME|g" $KARPENTER_VALUES
 sed -i "s|interruptionQueue: .*|interruptionQueue: $EKS_KARPENTER_QUEUE_NAME|g" $KARPENTER_VALUES
 
-# 해당 명령어를 실행하기 위해서 sealed-secrets-key-backup.yaml 파일의 생성이 필요하다.
+# sealed-secrets-key-backup.yaml 파일은 이 명령어로 생성한다.
+# kubectl get secret -n kube-system -l sealedsecrets.bitnami.com/sealed-secrets-key -o yaml > sealed-secrets-key-backup.yaml
+# sealed-secrets-key-backup.yaml 파일을 사용하여 키를 재사용한다.
 # kubectl apply -f $maindir/sealed-secrets/sealed-secrets-key-backup.yaml
+
+# sealed-secrets을 다운로드한다.
 kubectl apply -f https://github.com/bitnami-labs/sealed-secrets/releases/download/v0.26.3/controller.yaml
 
 echo 'helm install aws-load-balancer-controller -n kube-system -f $HOME/aws-shoppingmall-eks/aws-load-balancer-controller/ci/my-values.yaml $HOME/aws-shoppingmall-eks/aws-load-balancer-controller/.'
