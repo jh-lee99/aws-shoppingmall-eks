@@ -1,0 +1,30 @@
+replicas: 2
+controller:
+  resources:
+    limits:
+      memory: 1Gi
+    requests:
+      cpu: 100m
+      memory: 1Gi
+serviceAccount:
+  name: karpenter
+  annotations:
+    eks.amazonaws.com/role-arn: arn:aws:iam::654654416925:role/karpenter-controller
+
+settings:
+  aws:
+    clusterEndpoint: "https://4B61295CA0D5F2996EE3E7EB5F837AFC.yl4.ap-northeast-1.eks.amazonaws.com"
+    clusterName: "ljh-eks"
+    defaultInstanceProfile: eks-c2c80751-cca6-d3a2-e5bc-356089406bed
+    interruptionQueueName: "Karpenter-ljh-eks"
+# serviceAccount:
+#   name: karpenter
+#   annotations:
+#     eks.amazonaws.com/role-arn: arn:aws:iam::654654416925:role/karpenter-controller
+
+# settings:
+#   aws:
+#     clusterEndpoint: "https://4B61295CA0D5F2996EE3E7EB5F837AFC.yl4.ap-northeast-1.eks.amazonaws.com"
+#     clusterName: "ljh-eks"
+#     defaultInstanceProfile: eks-c2c80751-cca6-d3a2-e5bc-356089406bed
+#     interruptionQueueName: "Karpenter-ljh-eks"
