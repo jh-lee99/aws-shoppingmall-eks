@@ -1,0 +1,186 @@
+defaultRules:
+  create: true
+  rules:
+    etcd: true
+    kubeApiserverAvailability: false
+    kubeApiserverBurnrate: false
+    kubeApiserverHistogram: false
+    kubeApiserverSlos: false
+    kubeControllerManager: false
+    kubeSchedulerAlerting: false
+    kubeSchedulerRecording: false
+    windows: false
+## Configuration for alertmanager
+alertmanager:
+  enabled: true
+  config:
+    route:
+      group_by: ["namespace"]
+      group_wait: 30s
+      group_interval: 2m
+      repeat_interval: 6h
+      receiver: "slack-notifications"
+      routes:
+        - receiver: "slack-notifications"
+          matchers:
+            - alertname =~ "InfoInhibitor|Watchdog"
+    receivers:
+      - name: "slack-notifications"
+        slack_configs:
+          - api_url: { { YOUR_SLACK_WEBHOOK_URL } }
+            channel: { { YOUR_SLACK_CHANNEL } } # 메시지를 보낼 Slack 채널
+            send_resolved: true
+            title: '{{ template "slack.default.title" . }}'
+            text: "summary: {{ .CommonAnnotations.summary }}\ndescription: {{ .CommonAnnotations.description }}"
+grafana:
+  enabled: true
+  grafana.ini:
+    auth:
+      sigv4_auth_enabled: true
+  defaultDashboardsTimezone: Asia/Seoul
+  ingress:
+    enabled: true
+    ingressClassName: alb
+    annotations:
+      alb.ingress.kubernetes.io/scheme: internet-facing # or internal
+      alb.ingress.kubernetes.io/target-type: ip
+      alb.ingress.kubernetes.io/listen-ports: '[{"HTTPS":443}, {"HTTP":80}]'
+      alb.ingress.kubernetes.io/certificate-arn: arn:aws:acm:ap-northeast-1:654654416925:certificate/69f70a14-adf6-4158-b269-d57fc0c89d80
+      alb.ingress.kubernetes.io/success-codes: 200-399
+      alb.ingress.kubernetes.io/manage-backend-security-group-rules: "true"
+      alb.ingress.kubernetes.io/group.name: "sg-external"
+      external-dns.alpha.kubernetes.io/hostname: ljh-monitor.youthlab.click
+    hosts:
+      - ljh-monitor.youthlab.click
+    paths:
+      - /*
+  persistence:
+    type: pvc
+    enabled: true
+    accessModes:
+      - ReadWriteOnce
+    size: 10Gi
+kubeApiServer:
+  enabled: false
+kubelet:
+  enabled: true
+kubeControllerManager:
+  enabled: false
+coreDns:
+  enabled: true
+kubeEtcd:
+  enabled: false
+kubeScheduler:
+  enabled: false
+kubeProxy:
+  enabled: true
+kubeStateMetrics:
+  enabled: true
+nodeExporter:
+  enabled: true
+prometheusOperator:
+  enabled: true
+
+additionalPrometheusRulesMap:
+  rule-name:
+    groups:
+      - name: Node
+        rules:
+          - alert: HostOutOfMemory
+            expr: (node_memory_MemAvailable_bytes / node_memory_MemTotal_bytes * 100 < 50) * on(instance) group_left (nodename) node_uname_info{ nodename=~".+" }
+            for: 2m
+            labels:
+              severity: warning
+            annotations:
+              summary: Host out of memory (instance { { $labels.instance } })
+              description: "Node memory is filling up (< 50% left)\n  VALUE = {{ $value }}\n  LABELS = {{ $labels }}"
+          - alert: BlackboxProbeFailed
+            expr: probe_success == 0
+            for: 0m
+            labels:
+              severity: critical
+            annotations:
+              summary: Blackbox probe failed (instance {{ $labels.instance }})
+              description: "Probe failed\n  VALUE = {{ $value }}\n  LABELS = {{ $labels }}"
+          - alert: MysqlSlaveIoThreadNotRunning
+            expr: ( mysql_slave_status_slave_io_running and ON (instance) mysql_slave_status_master_server_id > 0 ) == 0
+            for: 0m
+            labels:
+              severity: critical
+            annotations:
+              summary: MySQL Slave IO thread not running (instance {{ $labels.instance }})
+              description: "MySQL Slave IO thread not running on {{ $labels.instance }}\n  VALUE = {{ $value }}\n  LABELS = {{ $labels }}"
+          - alert: MysqlSlaveSqlThreadNotRunning
+            expr: ( mysql_slave_status_slave_sql_running and ON (instance) mysql_slave_status_master_server_id > 0) == 0
+            for: 0m
+            labels:
+              severity: critical
+            annotations:
+              summary: MySQL Slave SQL thread not running (instance {{ $labels.instance }})
+              description: "MySQL Slave SQL thread not running on {{ $labels.instance }}\n  VALUE = {{ $value }}\n  LABELS = {{ $labels }}"
+
+prometheus:
+  enabled: true
+  serviceMonitor:
+    scrapeTimeout: 1s
+    enableFeatures:
+      - remote-write-receiver
+      - native-histograms
+  prometheusSpec:
+    scrapeInterval: "1s"
+    serviceAccountName: amp-ingest
+    serviceMonitorSelectorNilUsesHelmValues: false
+    podMonitorSelectorNilUsesHelmValues: false
+    remoteWrite:
+      - url: https://aps-workspaces.ap-northeast-2.amazonaws.com/workspaces/ws-ad96619b-1492-4119-bb5b-c1cdb66f1d2d/api/v1/remote_write # 원격 쓰기 URL
+        sigv4:
+          region: ap-northeast-2 # AMP의 리전
+        queueConfig:
+          maxSamplesPerSend: 1000
+          maxShards: 200
+          capacity: 2500
+    global:
+      scrape_interval: 3s
+    additionalScrapeConfigs:
+      - job_name: "Databases"
+        static_configs:
+          - targets: ["10.10.48.10:9104"]
+            labels:
+              instance: "ljh-master-db"
+          - targets: ["10.10.52.10:9104"]
+            labels:
+              instance: "ljh-slave-db"
+      - job_name: "ljh.youthlab.click"
+        metrics_path: /probe
+        params:
+          module: [http_2xx] # 모니터링할 모듈 (예: HTTP 200 응답 확인)
+        static_configs:
+          - targets:
+              - https://ljh.youthlab.click # 웹 서비스의 로컬 주소
+        relabel_configs:
+          - source_labels: [__address__]
+            target_label: __param_target
+          - source_labels: [__param_target]
+            target_label: instance
+          - target_label: __address__
+            replacement: blackbox-prometheus-blackbox-exporter.monitoring:9115 # Blackbox Exporter의 서비스 이름 및 포트
+      - job_name: "ljh-argo.youthlab.click"
+        metrics_path: /probe
+        params:
+          module: [http_2xx] # 모니터링할 모듈 (예: HTTP 200 응답 확인)
+        static_configs:
+          - targets:
+              - https://ljh-argo.youthlab.click # 웹 서비스의 로컬 주소
+        relabel_configs:
+          - source_labels: [__address__]
+            target_label: __param_target
+          - source_labels: [__param_target]
+            target_label: instance
+          - target_label: __address__
+            replacement: blackbox-exporter-prometheus-blackbox-exporter.monitoring:9115 # Blackbox Exporter의 서비스 이름 및 포트
+serviceAccounts:
+  server:
+    create: true # 위에서 생성하였으므로 새로 만들지 않음
+    name: amp-ingest # 위에서 사용된 동일한 서비스 어카운트 이름
+    annotations:
+      eks.amazonaws.com/role-arn: "arn:aws:iam::654654416925:role/ljh-eks-amazon-managed-service-prometheus"
