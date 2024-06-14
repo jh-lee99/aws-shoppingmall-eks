@@ -1,0 +1,7 @@
+serviceAccount:
+  create: true
+  name: aws-load-balancer-controller
+  annotations:
+    eks.amazonaws.com/role-arn: arn:aws:iam::654654416925:role/load-balancer-controller
+clusterName: ljh-test
+region: ap-northeast-1
