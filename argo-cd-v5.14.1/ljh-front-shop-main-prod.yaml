@@ -1,0 +1,17 @@
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: ljh-front-shop-main-prod
+  namespace: argocd
+spec:
+  project: default
+  source:
+    repoURL: git@github.com:jh-lee99/ljh-front-shop-main.git
+    targetRevision: HEAD
+    path: overlays/prod/.
+  destination:
+    server: https://kubernetes.default.svc
+    namespace: prod
+  syncPolicy:
+    syncOptions:
+      - CreateNamespace=true
