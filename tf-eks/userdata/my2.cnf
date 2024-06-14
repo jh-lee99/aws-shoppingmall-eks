@@ -1,0 +1,35 @@
+[client]
+default-character-set = utf8mb4
+
+[mysql]
+default-character-set = utf8mb4
+
+[mysqld]
+bind-address=0.0.0.0
+character-set-client-handshake = FALSE
+character-set-server           = utf8mb4
+collation-server               = utf8mb4_unicode_ci
+# default-time-zone='+9:00'
+
+# Enable binary logging
+log_bin = mysql-bin
+
+# Unique server ID
+server_id = 2
+
+# Specify the relay log location
+relay_log = /var/lib/mysql/mysql-relay-bin
+
+# Log slave updates
+log_slave_updates = 1
+
+# Set the slave to read-only mode
+read_only = 1
+
+# Set binlog format to ROW
+binlog_format = ROW
+
+# Optional: Recommended settings for replication
+# skip_slave_start = 1  # If you want to manually control when the slave starts
+# relay_log_recovery = 1  # To automatically recover relay logs in case of a crash
+# replicate-do-db = your_database_name  # To limit replication to specific databases

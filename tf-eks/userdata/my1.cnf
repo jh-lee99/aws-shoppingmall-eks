@@ -1,0 +1,27 @@
+[client]
+default-character-set = utf8mb4
+
+[mysql]
+default-character-set = utf8mb4
+
+[mysqld]
+bind-address=0.0.0.0
+character-set-client-handshake = FALSE
+character-set-server           = utf8mb4
+collation-server               = utf8mb4_unicode_ci
+# default-time-zone='+9:00'
+
+# Enable binary logging
+log-bin = mysql-bin
+
+# Unique server ID
+server-id = 1
+
+# Recommended: Set the binlog format (ROW is recommended for replication)
+binlog_format = ROW
+
+# Optional: Set the binlog retention period (in days)
+expire_logs_days = 7
+
+# Optional: To specify a specific binlog directory
+# log_bin_basename = /var/lib/mysql/mysql-bin
