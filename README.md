@@ -35,6 +35,8 @@ AWS, Terraform, EKS, Docker, git, github, Slack, Grafana, Prometheus, Loki, Gith
 
 본 프로젝트는 대규모 사용자를 지원할 수 있는 확장 가능하고 안정적인 클라우드 인프라를 구축하는 것을 목표로 합니다. AWS EKS를 기반으로 한 환경에서 Terraform과 GitOps 전략을 활용하여 인프라를 관리하며, 자동화된 CI/CD 파이프라인을 통해 효율적인 서비스 배포와 운영을 지원합니다.
 
+# 구성도
+
 ## 3-Tier 구성도 / 백업 / 리소스 최적화
 
 ![3-Tier 백업 비소스 최적화](https://github.com/user-attachments/assets/fb3926d9-1dbf-45a1-a149-e943dc3288b1)
